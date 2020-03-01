@@ -50,13 +50,13 @@ def costFunction(distanceMatrix, scenesVector):#additive cost function
 	for i in range(1,len(scenesVector)):
 		for j in range(scenesVector[i - 1] + 1, scenesVector[i]):
 			for k in range(scenesVector[i - 1] + 1, scenesVector[i]):
-				cost = cost + distanceMatrix[j][k]
+				cost += distanceMatrix[j][k]
 	return cost
 
 def distanceRange(D, start, stop):
 	result = 0
 	for i in range(start, stop):
-		result = result + D[stop][i] + D[i][stop]
+		result += D[stop][i] + D[i][stop]
 	return result
 
 def sumsTable(D, N):	
