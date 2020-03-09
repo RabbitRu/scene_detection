@@ -1,37 +1,8 @@
 import os
-
-os.environ["KERAS_BACKEND"] = "plaidml.keras.backend"
-import keras
-import cv2
 import numpy as np
 import math
 from scipy import spatial
 
-
-
-def readData():
-	fs = open('data/1/shots.txt')
-	fv = cv2.VideoCapture('data/1/video.mp4')
-	shots = readShots(fs)
-	return (shots, fv)
-
-def readShots(shotFile):
-	array = []
-	for line in shotFile: # read rest of lines
-		array.append([int(x) for x in line.split()])
-	return array
-
-def readImageFromVideo(video, index):
-	totalFrames = video.get(cv2.CAP_PROP_FRAME_COUNT)
-	if index > totalFrames or index < 0:
-		print('Кадр за границами видео')
-		return 0
-	video.set(cv2.CAP_PROP_POS_FRAMES, index)
-	ret, frame = video.read()
-	img = cv2.resize(frame,(299,299))
-	img = np.reshape(img,[1,299,299,3])
-
-	return img
 
 def buildMatrix(frames):
 	matrix = [[0 for x in range(len(frames))] for y in range(len(frames))] 
@@ -105,35 +76,11 @@ def getDivision(J, K):
 
 
 
-
-data = readData()
-model = keras.applications.xception.Xception(include_top=False, weights='imagenet', pooling='avg')
-
-frame = model.predict(readImageFromVideo(data[1], 10))
-#print(frame[0]) 2048 parameters
-
-K = 70#0 #белое солнце
-N = 720#len(predictedFrames)
-predictedFrames = []
-shotIndex = 0
-for shot in data[0][0:N]:
-	shotIndex = shotIndex + 1
-	#print('predicting frame ' + str(shotIndex))
-	imageIndex = (shot[0] + shot[1]) / 2
-	image = readImageFromVideo(data[1], imageIndex)
-	middleFrame = model.predict(image)
-	predictedFrames.append(middleFrame[0])
-distanceMatrix = buildMatrix(predictedFrames)
-#print(distanceMatrix)
-
-
-tables = costTable(distanceMatrix, K, N)
-
-division = getDivision(tables[1], K)
-
-np.savetxt('division.txt', division, '%d')
-np.savetxt('C.txt', tables[0], '%f')
-np.savetxt('J.txt', tables[1], '%d')
+def basicSceneDetect(features):
+	distanceMatrix = buildMatrix(features)
+	tables = costTable(distanceMatrix, K, N)
+	division = getDivision(tables[1], K)
+	return division
 
 
 

@@ -1,44 +1,144 @@
 import os
 import cv2
 import numpy as np
-import math
-from scipy import spatial
 
+import checkResults as cr
+import detectScenes as ds 
+import extractFeatures as ef 
 
-
-def readData(folderPath):
-	fs = open(folderPath + '\\shots.txt')
-	#fv = cv2.VideoCapture(folderPath + '\\video.mp4')
-	shots = readShots(fs)
-	return shots#(shots, fv)
-
-def readShots(shotFile):
-	array = []
-	for line in shotFile: # read rest of lines
-		array.append([int(x) for x in line.split()])
+#Строка начальный и конечный кадр
+def readScenesIBM(fscenes, shots):
+	array = [0]
+	with open(fscenes) as f:
+	    lines=f.readlines()
+	    for line in lines:
+	        endingFrame = int(line.split()[0])
+	        planIndex = next(i for i, x in enumerate(shots) if endingFrame == x[1])
+	    array.append(planIndex)
 	return array
 
-def readImageFromVideo(video, index):
-	totalFrames = video.get(cv2.CAP_PROP_FRAME_COUNT)
-	if index > totalFrames or index < 0:
-		print('Кадр за границами видео')
-		return 0
-	video.set(cv2.CAP_PROP_POS_FRAMES, index)
-	ret, frame = video.read()
-	img = cv2.resize(frame,(299,299))
-	img = np.reshape(img,[1,299,299,3])
+#Через запятую номера планов первых в сцене
+def readScenesBBC(fscenes, shots):
+	scenes = np.loadtxt(fscenes, int,  delimiter=',' )
+	return scenes
 
-	return img
+def readScenes(fscenes, shots):
+	array = []
+	with open(fscenes) as f:
+	    lines=f.readlines()
+	    for line in lines:
+	        array.append(int(line.split()[0]))
+	    array.append(int(lines[-1].split()[-1]) + 1)
+	return array
+
+#Строка перечисление планов в сцене
+def readShots(shotFile):
+	shots = np.loadtxt(shotFile, int)
+	array = []
+	for shot in shots: # read rest of lines
+		array.append([shot[0],shot[1]])
+	return array
+
+def readDivision(fdivision):
+	division = np.loadtxt(fdivision, int)
+	return division
+
+def readFeatures(ffeatures):
+	features = np.loadtxt(ffeatures, int)
+	return features
+
+def saveFeatures(ffeatures, features):
+	np.savetxt(ffeatures, features)
+	pass
+
+def saveDivision(fdivision, division):
+	np.savetxt(fdivision, division)
+	pass
+
+def readData(folderPath, generateShots, generateDiviion, generateFeatures):
+	#print(1)
+	try:
+		fv = cv2.VideoCapture(folderPath + '\\video.mp4')
+		fv.get(cv2.CAP_PROP_FRAME_COUNT)
+	except Exception as e:
+		print(e)
+		print("В папке " + str(folderPath) + " нет видео")
+		return
+
+	#print(2)
+	try:
+		if(not generateShots):
+			shots = readShots(folderPath + '\\shots.txt')
+		else:
+			x = 5#
+	except Exception as e:
+		print(e)
+		print("В папке " + str(folderPath) + " нет файла шотов, генерируем")
+		shots = []
+		#Нужно добавить генерацию шотов той сеткой с гита (:
+
+	#print(3)
+	try:
+		ffeatures = folderPath + '\\features.txt'
+		if(not generateFeatures):
+			features = readFeatures(ffeatures)
+		else:
+			features = ef.basicFeatureExctract(fv, shots)
+			saveFeatures(ffeatures, features)
+	except Exception as e:
+		print(e)
+		print("В папке " + str(folderPath) + " нет файла особеностей, пробуем сгенерировать")
+		features = ef.basicFeatureExctract(fv, shots)
+		saveFeatures(ffeatures, features)
+
+	#print(4)
+	try:
+		fdivision = folderPath + '\\division.txt'
+		if(not generateDiviion):
+			division = readDivision(fdivision)
+		else:
+			division = ds.basicSceneDetect(features)
+			saveDivision(fdivision, division)
+	except Exception as e:
+		print(e)
+		print("В папке " + str(folderPath) + " нет файла нашего разбиения, пробуем сгенерировать")
+		division = ds.basicSceneDetect(features)
+		saveDivision(fdivision, division)
+
+	#print(5)
+	try:		
+		fscenes = folderPath + '\\scenes.txt'
+		if('IBM' in folderPath):
+			scenes = readScenesIBM(fscenes, shots)
+		elif('BBC' in folderPath):
+			scenes = readScenesBBC(fscenes, shots)
+		else:
+			scenes = readScenes(fscenes, shots)
+	except Exception as e:
+		print(e)
+		print("В папке " + str(folderPath) + " нет файла оригинальных сцен, не сможем провести сравнение результатов")
+
+	#print(6)
+	try:		
+		cr.getMetrics(scenes, division)
+	except Exception as e:
+		print(e)
+		print("В папке " + str(folderPath) + " не получилось провести сравнение")
+
+	return (shots, fv)
 
 def main(args):
-    # parse arguments using optparse or argparse 
+	# parse arguments using optparse or argparse 
     data = []
-    for root, dirs, files in os.walk('./Datasets'):
-    	#Номер означает что это одно из видео, а не подпапка
-    	if(root[-1].isdigit()):
-    		data.append(readData(root))
+    try:
+	    for root, dirs, files in os.walk('./Datasets'):
+	    #Номер означает что это одно из видео, а не подпапка
+	    		if(root[-1].isdigit()):
+	    			data.append(readData(root, False, False, False))
+    except Exception as e:
+    	print(e)
 
-    print(data)
+   # print(data)
 
 if __name__ == '__main__':
     import sys

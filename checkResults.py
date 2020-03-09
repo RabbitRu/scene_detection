@@ -1,5 +1,3 @@
-from numpy import loadtxt
-
 #Во всех метриках А оригинал, B сгенерирован
 #Метрики считают единицей длины один план,
 #точнее будет учитывать продолжительность каждого плана в кадрах
@@ -91,18 +89,15 @@ def metricCoverage(divA, divB):
 	return summator / (len(divA) - 1)
 
 
-
-division = loadtxt("division.txt", int )
-purity = metricPurity(division, division)
-print(f'Purity  {purity:.5f}')
-
-coverage = metricCoverage(division, division)
-print(f'Coverage {coverage:.5f}')
-
-
-overflow = metricOverflow(division, division)
-print(f'Overflow {overflow:.5f}')
-
+def getMetrics(origDivision, ourDivision):
+	purity = metricPurity(origDivision, ourDivision)
+	coverage = metricCoverage(origDivision, ourDivision)
+	overflow = metricOverflow(origDivision, ourDivision)
+	allMetrics = []
+	allMetrics.append(purity)
+	allMetrics.append(coverage)
+	allMetrics.append(overflow)
+	return allMetrics
 
 
 
