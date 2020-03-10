@@ -76,7 +76,7 @@ def getDivision(J, K):
 
 
 
-def basicSceneDetect(features):
+def basicSceneDetect(features, K, N):
 	distanceMatrix = buildMatrix(features)
 	tables = costTable(distanceMatrix, K, N)
 	division = getDivision(tables[1], K)

@@ -55,6 +55,10 @@ def saveDivision(fdivision, division):
 	np.savetxt(fdivision, division)
 	pass
 
+def saveMetrics(fmetrics, metrics):
+	np.savetxt(fmetrics, metrics)
+	pass
+
 def readData(folderPath, generateShots, generateDiviion, generateFeatures):
 	#print(1)
 	try:
@@ -91,21 +95,8 @@ def readData(folderPath, generateShots, generateDiviion, generateFeatures):
 		features = ef.basicFeatureExctract(fv, shots)
 		saveFeatures(ffeatures, features)
 
-	#print(4)
-	try:
-		fdivision = folderPath + '\\division.txt'
-		if(not generateDiviion):
-			division = readDivision(fdivision)
-		else:
-			division = ds.basicSceneDetect(features)
-			saveDivision(fdivision, division)
-	except Exception as e:
-		print(e)
-		print("В папке " + str(folderPath) + " нет файла нашего разбиения, пробуем сгенерировать")
-		division = ds.basicSceneDetect(features)
-		saveDivision(fdivision, division)
 
-	#print(5)
+	#print(4)
 	try:		
 		fscenes = folderPath + '\\scenes.txt'
 		if('IBM' in folderPath):
@@ -117,10 +108,27 @@ def readData(folderPath, generateShots, generateDiviion, generateFeatures):
 	except Exception as e:
 		print(e)
 		print("В папке " + str(folderPath) + " нет файла оригинальных сцен, не сможем провести сравнение результатов")
+		return
+
+	#print(5)
+	try:
+		fdivision = folderPath + '\\division.txt'
+		if(not generateDiviion):
+			division = readDivision(fdivision)
+		else:
+			division = ds.basicSceneDetect(features, len(scenes), len(shots))
+			saveDivision(fdivision, division)
+	except Exception as e:
+		print(e)
+		print("В папке " + str(folderPath) + " нет файла нашего разбиения, пробуем сгенерировать")
+		division = ds.basicSceneDetect(features, len(scenes), len(shots))
+		saveDivision(fdivision, division)
 
 	#print(6)
 	try:		
-		cr.getMetrics(scenes, division)
+		fmetrics = folderPath + '\\metrics.txt'
+		metrics = cr.getMetrics(scenes, division)
+		saveMetrics(fmetrics, metrics)
 	except Exception as e:
 		print(e)
 		print("В папке " + str(folderPath) + " не получилось провести сравнение")

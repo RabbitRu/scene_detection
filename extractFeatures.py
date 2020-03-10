@@ -21,8 +21,8 @@ def readImageFromVideo(video, index):
 
 def basicFeatureExctract(fv, shots):
 	model = keras.applications.xception.Xception(include_top=False, weights='imagenet', pooling='avg')
+	predictedFrames = []
 	for shot in shots:
-		shotIndex = shotIndex + 1
 		imageIndex = (shot[0] + shot[1]) / 2
 		image = readImageFromVideo(fv, imageIndex)
 		middleFrame = model.predict(image)
