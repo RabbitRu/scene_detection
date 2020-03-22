@@ -5,6 +5,7 @@ import numpy as np
 import checkResults as cr
 import detectScenes as ds 
 import extractFeatures as ef 
+import extractShots as es
 
 #Строка начальный и конечный кадр
 def readScenesIBM(fscenes, shots):
@@ -61,8 +62,19 @@ def saveMetrics(fmetrics, metrics):
 
 def readData(folderPath, generateShots, generateDiviion, generateFeatures):
 	#print(1)
+	print(folderPath)
+	videoname = '\\video.mp4'
 	try:
 		fv = cv2.VideoCapture(folderPath + '\\video.mp4')
+		if(not fv.isOpened()):
+			videoname = '\\video.mkv'
+			fv = cv2.VideoCapture(folderPath + '\\video.mkv')
+		elif(not fv.isOpened()):
+			videoname = '\\video.avi'
+			fv = cv2.VideoCapture(folderPath + '\\video.avi')
+		elif(not fv.isOpened()):
+			videoname = '\\video.mov'
+			fv = cv2.VideoCapture(folderPath + '\\video.mov')
 		fv.get(cv2.CAP_PROP_FRAME_COUNT)
 	except Exception as e:
 		print(e)
@@ -74,12 +86,14 @@ def readData(folderPath, generateShots, generateDiviion, generateFeatures):
 		if(not generateShots):
 			shots = readShots(folderPath + '\\shots.txt')
 		else:
-			x = 5#
+			shots = es.extractShotsTransNet(folderPath + videoname)
 	except Exception as e:
 		print(e)
-		print("В папке " + str(folderPath) + " нет файла шотов, генерируем")
-		shots = []
-		#Нужно добавить генерацию шотов той сеткой с гита (:
+		try:
+			print("В папке " + str(folderPath) + " нет файла шотов, генерируем")
+			shots = es.extractShotsTransNet(folderPath + videoname)
+		except Exception as e:
+			print(e)
 
 	#print(3)
 	try:

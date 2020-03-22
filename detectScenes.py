@@ -59,7 +59,6 @@ def costTable(D, K, N):
 	C = [[0 for x in range(K + 1)] for y in range(N + 1)] 
 	J = [[0 for x in range(K + 1)] for y in range(N + 1)] 
 	E = sumsTable(D, N)	
-	np.savetxt('E.txt', E, '%f')
 	for i in range(1, K + 1):
 		for j in range(1, N + 1):
 			CJ = getCJ(E, j, i, N, C)
