@@ -27,7 +27,7 @@ def _puritySubfunc(divA, divB, T):
 		result += rsi * summator / T
 	return result
 
-#Метрика Purity
+#Метрика Purity, идеал 1
 def metricPurity(divA, divB):
 	if(divB[-1] != divA[-1]):
 		print("Такого быть не должно, количество планов должно совпадать")
@@ -52,7 +52,7 @@ def _findOverlappings(division, shotStart, shotEnd):
 	totalOverlap = leftOverlap + rightOverlap
 	return totalOverlap
 
-#Метрика Overflow
+#Метрика Overflow, идеал 0
 def metricOverflow(divA, divB):
 	summator = 0
 	for i in range(1, len(divB)):
@@ -78,7 +78,7 @@ def _findLagrestOverlappingScene(division, shotStart, shotEnd):
 		print("Для каждой сцены должно быть пересечение хоть в один план")
 	return maxIntersec 
 
-#Метрика Coverage
+#Метрика Coverage, идеал 1
 def metricCoverage(divA, divB):
 	summator = 0
 	for i in range(1,len(divA)):

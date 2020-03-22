@@ -7,13 +7,11 @@ from TransNet2.transnet_utils import draw_video_with_predictions, scenes_from_pr
 
 # initialize the network
 
-def extractShotsTransNet(videoPath):
+def extractShotsTransNet(videoPath, debug = False):
 	try:
-		print(0)
 		params = TransNetParams()
-		params.CHECKPOINT_PATH = "./model/transnet_model-F16_L3_S2_D256"
+		params.CHECKPOINT_PATH = "./TransNet2/model/transnet_model-F16_L3_S2_D256"
 		net = TransNet(params)
-		print(1)
 
 		# export video into numpy array using ffmpeg
 		video_stream, err = (
@@ -24,10 +22,8 @@ def extractShotsTransNet(videoPath):
 		)
 		video = np.frombuffer(video_stream, np.uint8).reshape([-1, params.INPUT_HEIGHT, params.INPUT_WIDTH, 3])
 
-		print(2)
 		# predict transitions using the neural network
 		predictions = net.predict_video(video)
-		print(3)
 		return predictions
 
 		# Generate list of scenes from predictions, returns tuples of (start frame, end frame)
@@ -38,7 +34,6 @@ def extractShotsTransNet(videoPath):
 	except Exception as e:
 			print(e)
 
-	print(4)
 	return
 
 

@@ -60,6 +60,10 @@ def saveMetrics(fmetrics, metrics):
 	np.savetxt(fmetrics, metrics)
 	pass
 
+def saveShots(fshots, shots):
+	np.savetxt(fshots, shots)
+	pass
+
 def readData(folderPath, generateShots, generateDiviion, generateFeatures):
 	#print(1)
 	print(folderPath)
@@ -83,15 +87,18 @@ def readData(folderPath, generateShots, generateDiviion, generateFeatures):
 
 	#print(2)
 	try:
+		fshots = folderPath + '\\shots.txt'
 		if(not generateShots):
-			shots = readShots(folderPath + '\\shots.txt')
+			shots = readShots(fshots)
 		else:
 			shots = es.extractShotsTransNet(folderPath + videoname)
+			saveShots(fshots,shots)
 	except Exception as e:
 		print(e)
 		try:
 			print("В папке " + str(folderPath) + " нет файла шотов, генерируем")
 			shots = es.extractShotsTransNet(folderPath + videoname)
+			saveShots(fshots,shots)
 		except Exception as e:
 			print(e)
 

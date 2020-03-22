@@ -15,19 +15,19 @@ class TransNetParams:
 
 class TransNet:
 
-    def __init__(self, params: TransNetParams, session=None):
+    def __init__(self, params: TransNetParams, session=None, debug = False):
         tf.compat.v1.disable_eager_execution()
         self.params = params
         self.session = session or tf.compat.v1.Session()
         self._build()
         self._restore()
 
-    def _build(self):
+    def _build(self, debug = False):
         def shape_text(tensor):
             return ", ".join(["?" if i is None else str(i) for i in tensor.get_shape().as_list()])
 
         with self.session.graph.as_default():
-            print("[TransNet] Creating ops.")
+            if debug: print("[TransNet] Creating ops.")
 
             with tf.compat.v1.variable_scope("TransNet"):
                 def conv3d(inp, filters, dilation_rate):
@@ -38,12 +38,12 @@ class TransNet:
                 self.inputs = tf.compat.v1.placeholder(tf.uint8,
                                              shape=[None, None, self.params.INPUT_HEIGHT, self.params.INPUT_WIDTH, 3])
                 net = tf.cast(self.inputs, dtype=tf.float32) / 255.
-                print(" " * 10, "Input ({})".format(shape_text(net)))
+                if debug: print(" " * 10, "Input ({})".format(shape_text(net)))
 
                 for idx_l in range(self.params.L):
                     with tf.compat.v1.variable_scope("SDDCNN_{:d}".format(idx_l + 1)):
                         filters = (2 ** idx_l) * self.params.F
-                        print(" " * 10, "SDDCNN_{:d}".format(idx_l + 1))
+                        if debug: print(" " * 10, "SDDCNN_{:d}".format(idx_l + 1))
 
                         for idx_s in range(self.params.S):
                             with tf.compat.v1.variable_scope("DDCNN_{:d}".format(idx_s + 1)):
@@ -53,31 +53,31 @@ class TransNet:
                                 conv3 = conv3d(net, filters, 4)
                                 conv4 = conv3d(net, filters, 8)
                                 net = tf.concat([conv1, conv2, conv3, conv4], axis=4)
-                                print(" " * 10, "> DDCNN_{:d} ({})".format(idx_s + 1, shape_text(net)))
+                                if debug: print(" " * 10, "> DDCNN_{:d} ({})".format(idx_s + 1, shape_text(net)))
 
                         net = tf.keras.layers.MaxPool3D(pool_size=(1, 2, 2))(net)
-                        print(" " * 10, "MaxPool ({})".format(shape_text(net)))
+                        if debug: print(" " * 10, "MaxPool ({})".format(shape_text(net)))
 
                 shape = [tf.shape(input=net)[0], tf.shape(input=net)[1], np.prod(net.get_shape().as_list()[2:])]
                 net = tf.reshape(net, shape=shape, name="flatten_3d")
-                print(" " * 10, "Flatten ({})".format(shape_text(net)))
+                if debug: print(" " * 10, "Flatten ({})".format(shape_text(net)))
                 net = tf.keras.layers.Dense(self.params.D, activation=tf.nn.relu)(net)
-                print(" " * 10, "Dense ({})".format(shape_text(net)))
+                if debug: print(" " * 10, "Dense ({})".format(shape_text(net)))
 
                 self.logits = tf.keras.layers.Dense(2, activation=None)(net)
-                print(" " * 10, "Logits ({})".format(shape_text(self.logits)))
+                if debug: print(" " * 10, "Logits ({})".format(shape_text(self.logits)))
                 self.predictions = tf.nn.softmax(self.logits, name="predictions")[:, :, 1]
-                print(" " * 10, "Predictions ({})".format(shape_text(self.predictions)))
+                if debug: print(" " * 10, "Predictions ({})".format(shape_text(self.predictions)))
 
-            print("[TransNet] Network built.")
+            if debug: print("[TransNet] Network built.")
             no_params = np.sum([int(np.prod(v.get_shape().as_list())) for v in tf.compat.v1.trainable_variables()])
-            print("[TransNet] Found {:d} trainable parameters.".format(no_params))
+            if debug: print("[TransNet] Found {:d} trainable parameters.".format(no_params))
 
-    def _restore(self):
+    def _restore(self, debug=False):
         if self.params.CHECKPOINT_PATH is not None:
             saver = tf.compat.v1.train.Saver()
             saver.restore(self.session, self.params.CHECKPOINT_PATH)
-            print("[TransNet] Parameters restored from '{}'.".format(os.path.basename(self.params.CHECKPOINT_PATH)))
+            if debug: print("[TransNet] Parameters restored from '{}'.".format(os.path.basename(self.params.CHECKPOINT_PATH)))
 
     def predict_raw(self, frames: np.ndarray):
         assert len(frames.shape) == 5 and \
