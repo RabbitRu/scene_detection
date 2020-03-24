@@ -75,11 +75,14 @@ def getDivision(J, K):
 
 
 
-def basicSceneDetect(features, K, N):
+def basicSceneDetect(features, shots, K, N):
 	distanceMatrix = buildMatrix(features)
 	tables = costTable(distanceMatrix, K, N)
 	division = getDivision(tables[1], K)
-	return division
+	divisionByFrames = []
+	for i in range(1, len(division)):
+		divisionByFrames.append([shots[division[i - 1]][0], shots[division[i] - 1][1]])
+	return (divisionByFrames, division)
 
 
 

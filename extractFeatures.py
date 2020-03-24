@@ -15,7 +15,6 @@ def readImageFromVideo(video, index):
 	ret, frame = video.read()
 	img = cv2.resize(frame,(299,299))
 	img = np.reshape(img,[1,299,299,3])
-
 	return img
 
 
@@ -23,10 +22,14 @@ def basicFeatureExctract(fv, shots):
 	model = keras.applications.xception.Xception(include_top=False, weights='imagenet', pooling='avg')
 	predictedFrames = []
 	for shot in shots:
-		imageIndex = (shot[0] + shot[1]) / 2
-		image = readImageFromVideo(fv, imageIndex)
-		middleFrame = model.predict(image)
-		predictedFrames.append(middleFrame[0])
+		try:
+			imageIndex = (shot[0] + shot[1]) / 2
+			image = readImageFromVideo(fv, imageIndex)
+			middleFrame = model.predict(image)
+			predictedFrames.append(middleFrame[0])
+		except Exception as e:
+			print(e)
+			print('Ошибка с получением особенностей шота, кадр ' + str(imageIndex))
 	return predictedFrames
 
 
