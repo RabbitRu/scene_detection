@@ -17,6 +17,7 @@ def buildMatrix(frames):
 				print(str(i) + '_' + str(j))
 	return matrix
 
+#Скорее это Hellinger, но не суть https://www.encyclopediaofmath.org/index.php/Bhattacharyya_distance
 def bhatta( hist1,  hist2):
     # calculate mean of hist1
     h1_ = np.average(hist1);
@@ -37,7 +38,9 @@ def bhatta( hist1,  hist2):
 
 
 def distanceMetric(vector1, vector2): #попробуй soft cosine measure
-	distance = spatial.distance.cosine(vector1,vector2)#bhatta(vector1, vector2)
+	distance = np.linalg.norm(np.array(vector1) - np.array(vector2))
+	#spatial.distance.cosine(vector1,vector2)
+	#bhatta(vector1, vector2)
 	return distance
 
 def costFunction(distanceMatrix, scenesVector):#additive cost function

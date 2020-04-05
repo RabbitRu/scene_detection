@@ -248,7 +248,7 @@ def readData(
 
 	#print(6)
 	try:		
-		fmetrics = folderPath + '\\metrics' + FeatureType(i).name + '.txt'
+		fmetrics = folderPath + '\\metrics' + featureType.name + '.txt'
 		
 		if(featureType == FeatureType.ALL):
 			for i in range(7):
@@ -258,14 +258,14 @@ def readData(
 
 				metrics = cr.getMetrics(scenes, division)
 				saveMetrics(fmetrics, metrics)
-			'''
+			
 			fmetrics = folderPath+'\\'+featureType.HSV.name +'.txt'
 
 			division = readDivision(folderPath + '\\divisionByFrames' + featureType.HSV.name +'.txt')
 
 			metrics = cr.getMetrics(scenes, division)
 			saveMetrics(fmetrics, metrics)
-			'''
+			
 		else:
 			metrics = cr.getMetrics(scenes, division)
 			saveMetrics(fmetrics, metrics)
