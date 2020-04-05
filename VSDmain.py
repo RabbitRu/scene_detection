@@ -8,24 +8,51 @@ import detectScenes as ds
 import extractFeatures as ef 
 import extractShots as es
 
-class FeatureExtractionType(Enum):
-	Basic = 1
+class FeatureType(Enum):
+	Xception = 0
+	VGG19 = 1
+	InceptionV3 = 2
+	InceptionResNetV2 = 3
+	MobileNet = 4
+	MobileNetV2 = 5
+	DenseNet = 6
+	NASNet = 7
+	HSV = 21
+	Audio = 31
+	ALL=100
+
+
+#ResNet, inceptionResNet оч плохие результаты, а VGG16 оч похож на VGG19
+kerasModels = [
+	"keras.applications.xception.Xception(include_top=False, weights='imagenet', pooling='avg')",#299
+	"keras.applications.vgg19.VGG19(include_top=False, weights='imagenet', pooling='avg')",#224
+	"keras.applications.inception_v3.InceptionV3(include_top=False, weights='imagenet', pooling='avg')",#299
+	"keras.applications.mobilenet.MobileNet(input_shape=(224, 224, 3),include_top=False, weights='imagenet', pooling='avg')",#224
+	"keras.applications.mobilenet_v2.MobileNetV2(input_shape=(224, 224, 3), include_top=False, weights='imagenet', pooling='avg')",#224
+	"keras.applications.densenet.DenseNet201(include_top=False, weights='imagenet', pooling='avg')",#224
+	"keras.applications.nasnet.NASNetLarge(include_top=False, weights='imagenet', pooling='avg')"#224
+	]
+
+kerasImageSize = [
+299,224,299,
+224,224,224,331]
+
 
 #Строка начальный и конечный кадр
 def readScenesIBM(fscenes, shots):
 	scenes = np.loadtxt(fscenes, int)
 	#array = [0]
 	#with open(fscenes) as f:
-	#    lines=f.readlines()
-	#    for line in lines:
-	#        endingFrame = int(line.split()[0])
-	#        planIndex = next(i for i, x in enumerate(shots) if endingFrame == x[1])
-	#    array.append(planIndex)
+	#	lines=f.readlines()
+	#	for line in lines:
+	#		endingFrame = int(line.split()[0])
+	#		planIndex = next(i for i, x in enumerate(shots) if endingFrame == x[1])
+	#	array.append(planIndex)
 	return scenes
 
 #Через запятую номера планов первых в сцене, переводим в кадры 
 def readScenesBBC(fscenes, shots):
-	scenes = np.loadtxt(fscenes, int,  delimiter=',' )
+	scenes = np.loadtxt(fscenes, int, delimiter=',' )
 	scenesByFrames = []
 	for i in range(1, len(scenes)):
 		scenesByFrames.append([shots[scenes[i - 1]][0], shots[scenes[i] - 1][1]])
@@ -34,17 +61,17 @@ def readScenesBBC(fscenes, shots):
 def readScenes(fscenes, shots):
 	scenesByFrames = []
 	with open(fscenes) as f:
-	    lines=f.readlines()
-	    for line in lines:
-	        scenesByFrames.append(
-	        	[shots[int(line.split()[0])][0],
-	        	shots[int(line.split()[-1])][1]])
+		lines=f.readlines()
+		for line in lines:
+			scenesByFrames.append(
+				[shots[int(line.split()[0])][0],
+				shots[int(line.split()[-1])][1]])
 	#array = []
 	#with open(fscenes) as f:
-	#    lines=f.readlines()
-	#    for line in lines:
-	#        array.append(int(line.split()[0]))
-	#    array.append(int(lines[-1].split()[-1]) + 1)
+	#	lines=f.readlines()
+	#	for line in lines:
+	#		array.append(int(line.split()[0]))
+	#	array.append(int(lines[-1].split()[-1]) + 1)
 	return scenesByFrames
 
 #Строка перечисление планов в сцене
@@ -60,11 +87,11 @@ def readDivision(fdivision):
 	return division
 
 def readFeatures(ffeatures):
-	features = np.loadtxt(ffeatures, int)
+	features = np.loadtxt(ffeatures + '.txt', int)
 	return features
 
 def saveFeatures(ffeatures, features):
-	np.savetxt(ffeatures, features, fmt='%.10f')
+	np.savetxt(ffeatures + '.txt', features, fmt='%.10f')
 	pass
 
 def saveDivision(fdivision, fdivisionByFrames, division, saveDivisionByShots = True):
@@ -87,10 +114,10 @@ def saveShots(fshots, shots):
 
 def readData(
 	folderPath, generateShots, generateDiviion, generateFeatures,
-	shotNet, saveScenesByFramesToFile, featureExtractionType):
+	shotNet, saveScenesByFramesToFile, featureType, shotParts,
+	shotIndex):
 	#print(1)
 	print(folderPath)
-	featureFolderPath = folderPath + '\\' + featureExtractionType.name
 	
 	videoname = '\\video.mp4'
 	try:
@@ -129,19 +156,38 @@ def readData(
 
 	#print(3)
 	try:
-		if(featureExtractionType == FeatureExtractionType.Basic):
-			ffeatures = featureFolderPath + '\\features.txt'
+		ffeaturesShort = folderPath + '\\features'
+		#shotIndex
 		if(not generateFeatures):
-			features = readFeatures(ffeatures)
+			features = readFeatures(ffeaturesShort + featureType.name + '.txt')
 		else:
-			if(featureExtractionType == FeatureExtractionType.Basic):
-				features = ef.basicFeatureExctract(fv, shots)
-			saveFeatures(ffeatures, features)
+			if(featureType.value < 7):
+				features = ef.kerasFeatureExtract(fv, shots, kerasModels[featureType.value],
+					kerasImageSize[featureType.value], shotParts, shotIndex)
+
+			elif(featureType == FeatureType.ALL):
+				for i in range(7):
+					print(FeatureType(i).name)
+					features = ef.kerasFeatureExtract(fv, shots, kerasModels[i],
+					kerasImageSize[i], shotParts, shotIndex)
+					saveFeatures(ffeaturesShort + FeatureType(i).name, features)
+
+				features = ef.HSVHistFeatureExtract(fv, shots, shotParts, shotIndex)
+				saveFeatures(ffeaturesShort + featureType.HSV.name, features)
+
+			elif(featureType == FeatureType.HSV):
+				features = ef.HSVHistFeatureExtract(fv, shots, shotParts, shotIndex)
+
+			if(featureType != FeatureType.ALL):
+				saveFeatures(ffeaturesShort + featureType.name, features)
+
 	except Exception as e:
 		print(e)
 		print("В папке " + str(folderPath) + " нет файла особеностей, пробуем сгенерировать")
-		features = ef.basicFeatureExctract(fv, shots)
-		saveFeatures(ffeatures, features)
+		#Добавить для всего
+		features = ef.kerasFeatureExtract(fv, shots, kerasModels[featureType.value],
+					kerasImageSize[featureType.value], shotParts, shotIndex)
+		saveFeatures(ffeaturesShort + featureType.name , features)
 
 
 	#print(4)
@@ -164,27 +210,65 @@ def readData(
 
 	#print(5)
 	try:
-		fdivision = folderPath + '\\division.txt'
-		fdivisionByScenes = folderPath + '\\divisionByFrames.txt'
+		fdivision = folderPath + '\\division' + featureType.name +'.txt'
+		fdivisionByFrames = folderPath + '\\divisionByFrames' + featureType.name +'.txt'
+		fmatrix = folderPath + '\\' + featureType.name 
 		if(not generateDiviion):
-			division = readDivision(fdivisionByScenes)
+			division = readDivision(fdivisionByFrames)
 		else:
 			#[divisionByFrames, division]
-			divisions = ds.basicSceneDetect(features, shots, len(scenes), len(shots))
-			division = divisions[0]
-			saveDivision(fdivision, fdivisionByScenes, divisions)
+			if(featureType == FeatureType.ALL):
+
+				for i in range(7):
+					fmatrix = folderPath + '\\' + FeatureType(i).name 
+					features = readFeatures(ffeaturesShort + FeatureType(i).name)
+					divisions = ds.basicSceneDetect(features, shots, len(scenes), len(shots), fmatrix)
+					division = divisions[0]
+					saveDivision(folderPath + '\\division' + FeatureType(i).name +'.txt', 
+						 folderPath + '\\divisionByFrames' + FeatureType(i).name +'.txt', divisions)
+				
+				fmatrix = folderPath + '\\' + featureType.HSV.name
+				features = readFeatures(ffeaturesShort + featureType.HSV.name)
+				divisions = ds.basicSceneDetect(features, shots, len(scenes), len(shots), fmatrix)
+				division = divisions[0]
+				saveDivision(folderPath + '\\division' + FeatureType(i).name +'.txt', 
+					 folderPath + '\\divisionByFrames' + FeatureType(i).name +'.txt', divisions)
+				
+
+			else:
+				divisions = ds.basicSceneDetect(features, shots, len(scenes), len(shots), fmatrix)
+				division = divisions[0]
+				saveDivision(fdivision, fdivisionByFrames, divisions)
 	except Exception as e:
 		print(e)
 		print("В папке " + str(folderPath) + " нет файла нашего разбиения, пробуем сгенерировать")
-		divisions = ds.basicSceneDetect(features, shots, len(scenes), len(shots))
+		divisions = ds.basicSceneDetect(features, shots, len(scenes), len(shots), fmatrix)
 		division = divisions[0]
-		saveDivision(fdivision, fdivisionByScenes, divisions)
+		saveDivision(fdivision, fdivisionByFrames, divisions)
 
 	#print(6)
 	try:		
-		fmetrics = folderPath + '\\metrics.txt'
-		metrics = cr.getMetrics(scenes, division)
-		saveMetrics(fmetrics, metrics)
+		fmetrics = folderPath + '\\metrics' + FeatureType(i).name + '.txt'
+		
+		if(featureType == FeatureType.ALL):
+			for i in range(7):
+				fmetrics = folderPath + '\\metric' + FeatureType(i).name + '.txt'#'_' + str(shotParts) + '_' + str(shotIndex)
+					
+				division = readDivision(folderPath + '\\divisionByFrames' + FeatureType(i).name +'.txt')
+
+				metrics = cr.getMetrics(scenes, division)
+				saveMetrics(fmetrics, metrics)
+			'''
+			fmetrics = folderPath+'\\'+featureType.HSV.name +'.txt'
+
+			division = readDivision(folderPath + '\\divisionByFrames' + featureType.HSV.name +'.txt')
+
+			metrics = cr.getMetrics(scenes, division)
+			saveMetrics(fmetrics, metrics)
+			'''
+		else:
+			metrics = cr.getMetrics(scenes, division)
+			saveMetrics(fmetrics, metrics)
 	except Exception as e:
 		print(e)
 		print("В папке " + str(folderPath) + " не получилось провести сравнение")
@@ -193,27 +277,30 @@ def readData(
 
 def main(args):
 	# parse arguments using optparse or argparse 
-    data = []
-    shotNet = es.initTransNet()
-    try:
-	    for root, dirs, files in os.walk('./Datasets'):
-	    #Номер означает что это одно из видео, а не подпапка
-	    	try:
-	    		if(root[-1].isdigit()):
-	    			data.append(
-	    				readData(
-	    					root, False, False, False, shotNet, True,
-	    					FeatureExtractionType.Basic))
-	    	except Exception as e:
-	    		print(e)
-    except Exception as e:
-    	print(e)
+	shotNet = es.initTransNet()
+	try:
+		for root, dirs, files in os.walk('./Datasets'):
+		#Номер означает что это одно из видео, а не подпапка
+			try:
+				if(root[-1].isdigit()):
+					readData(
+						root, False, True, True,
+						shotNet, True,	FeatureType.HSV, 2,
+						1)# Опыт показал что выбор разных кадров из одного шота слабо что-то меняет
+					#	folderPath, generateShots, generateDiviion, generateFeatures,
+					#	shotNet, saveScenesByFramesToFile, featureExtractionType, shotParts,
+					#	shotIndex):
+					
+			except Exception as e:
+				print(e)
+	except Exception as e:
+		print(e)
 
-   # print(data)
+	# print(data)
 
 if __name__ == '__main__':
-    import sys
-    main(sys.argv[1:])
+	import sys
+	main(sys.argv[1:])
 
 
 

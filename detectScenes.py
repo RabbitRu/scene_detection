@@ -2,18 +2,42 @@ import os
 import numpy as np
 import math
 from scipy import spatial
-
+#import BhattacharyyaDistance.bhatta_dist as bd
+from dictances import bhattacharyya
+import matplotlib as mp
+import matplotlib.pyplot as plt
+from collections import OrderedDict
 
 def buildMatrix(frames):
 	matrix = [[0 for x in range(len(frames))] for y in range(len(frames))] 
 	for i in range(len(frames)):
 		for j in range(len(frames)):
 			matrix[i][j] = distanceMetric(frames[i],frames[j])# similarity = 1 - distance
-
+			if(matrix[i][j] == float('nan')):
+				print(str(i) + '_' + str(j))
 	return matrix
 
+def bhatta( hist1,  hist2):
+    # calculate mean of hist1
+    h1_ = np.average(hist1);
+    # calculate mean of hist2
+    h2_ = np.average(hist2);
+    # calculate score
+    score = 0;
+    for i in range(len(hist1)):
+        score += math.sqrt( hist1[i] * hist2[i] );
+
+    # print h1_,h2_,score;
+    #При сравнении плана с самим собой может получиться отрицательное число под корнем
+    try:
+    	score = math.sqrt( 1 - ( 1 / math.sqrt(h1_*h2_*len(hist1)*len(hist1)) ) * score );
+    except ValueError as e:
+    	score = 0
+    return score;
+
+
 def distanceMetric(vector1, vector2): #попробуй soft cosine measure
-	distance = spatial.distance.cosine(vector1,vector2)
+	distance = spatial.distance.cosine(vector1,vector2)#bhatta(vector1, vector2)
 	return distance
 
 def costFunction(distanceMatrix, scenesVector):#additive cost function
@@ -75,13 +99,28 @@ def getDivision(J, K):
 
 
 
-def basicSceneDetect(features, shots, K, N):
+def basicSceneDetect(features, shots, K, N, fmatrix):
 	distanceMatrix = buildMatrix(features)
+
+	try:
+		plt.pcolormesh(distanceMatrix, cmap='magma', snap=True)
+		plt.savefig(fmatrix + 'matrix.png', bbox_inches='tight', dpi=200)
+		plt.close()
+	except Exception as e:
+		print(e)
+
 	tables = costTable(distanceMatrix, K, N)
 	division = getDivision(tables[1], K)
 	divisionByFrames = []
 	for i in range(1, len(division)):
 		divisionByFrames.append([shots[division[i - 1]][0], shots[division[i] - 1][1]])
+
+	try:
+		plt.pcolormesh(distanceMatrix, cmap='magma', snap=True)
+		plt.savefig(fmatrix + 'matrix.png', bbox_inches='tight', dpi=200)
+		plt.close()
+	except Exception as e:
+		print(e)
 	return (divisionByFrames, division)
 
 

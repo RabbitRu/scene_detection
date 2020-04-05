@@ -38,14 +38,14 @@ def metricPurity(divA, divB):
 
 
 
-def _findOverlappings(division, shot):
+def _findOverlappings(division, scene):
 	leftOverlap = 0
 	rightOverlap = 0 
 	for i in range(0, len(division)):
-		if(shot[0] < division[i][0] and division[i][0] < shot[1]):
-			leftOverlap = division[i][0] - shot[0]
-		if(shot[0] < division[i][1] and division[i][1] < shot[1]):
-			rightOverlap = shot[1] - division[i][1]
+		if(scene[0] < division[i][0] and division[i][0] < scene[1]):
+			leftOverlap = division[i][0] - scene[0]
+		if(scene[0] < division[i][1] and division[i][1] < scene[1]):
+			rightOverlap = scene[1] - division[i][1]
 	# здесь можно добавить замер времени
 	totalOverlap = leftOverlap + rightOverlap
 	return totalOverlap
@@ -59,21 +59,21 @@ def metricOverflow(divA, divB):
 
 
 
-def _findLagrestOverlappingScene(division, shot):
+def _findLagrestOverlappingScene(division, scene):
 	maxIntersec = 0
 	for i in range(0, len(division)):
 		intersection = 0
-		if not (division[i][1] < shot[0] or division[i][0] > shot[1]):
-			if(division[i][1] < shot[1]):
+		if not (division[i][1] < scene[0] or division[i][0] > scene[1]):
+			if(division[i][1] < scene[1]):
 				# здесь можно добавить замер времени
-				intersection = shot[1] - division[i][1]
+				intersection = scene[1] - division[i][1]
 			else:
 				# здесь можно добавить замер времени
-				intersection = min(shot[1] - shot[0], shot[1] - division[i][0])
+				intersection = min(scene[1] - scene[0], scene[1] - division[i][0])
 		if(intersection > maxIntersec):
 			maxIntersec = intersection
 	if(maxIntersec == 0):
-		print("Для каждой сцены должно быть пересечение хоть в один план")
+		print("Для каждой сцены должно быть пересечение хоть в один план" + str(scene))
 	return maxIntersec 
 
 #Метрика Coverage, идеал 1

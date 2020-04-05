@@ -1,6 +1,8 @@
 import sys
 import ffmpeg
 import numpy as np
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2' 
 import tensorflow as tf
 from TransNet2.transnet import TransNetParams, TransNet
 from TransNet2.transnet_utils import draw_video_with_predictions, scenes_from_predictions
