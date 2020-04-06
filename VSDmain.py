@@ -159,14 +159,15 @@ def readData(
 		ffeaturesShort = folderPath + '\\features'
 		#shotIndex
 		if(not generateFeatures):
-			features = readFeatures(ffeaturesShort + featureType.name + '.txt')
+			if(featureType != FeatureType.ALL):
+				features = readFeatures(ffeaturesShort + featureType.name + '.txt')
 		else:
-			if(featureType.value < 7):
+			if(featureType.value < len(kerasModels)):
 				features = ef.kerasFeatureExtract(fv, shots, kerasModels[featureType.value],
 					kerasImageSize[featureType.value], shotParts, shotIndex)
 
 			elif(featureType == FeatureType.ALL):
-				for i in range(7):
+				for i in range(len(kerasModels)):
 					print(FeatureType(i).name)
 					features = ef.kerasFeatureExtract(fv, shots, kerasModels[i],
 					kerasImageSize[i], shotParts, shotIndex)
@@ -185,8 +186,11 @@ def readData(
 		print(e)
 		print("В папке " + str(folderPath) + " нет файла особеностей, пробуем сгенерировать")
 		#Добавить для всего
-		features = ef.kerasFeatureExtract(fv, shots, kerasModels[featureType.value],
+		if(featureType.value < len(kerasModels)):
+			features = ef.kerasFeatureExtract(fv, shots, kerasModels[featureType.value],
 					kerasImageSize[featureType.value], shotParts, shotIndex)
+		elif(featureType == FeatureType.HSV):
+				features = ef.HSVHistFeatureExtract(fv, shots, shotParts, shotIndex)
 		saveFeatures(ffeaturesShort + featureType.name , features)
 
 
@@ -214,12 +218,13 @@ def readData(
 		fdivisionByFrames = folderPath + '\\divisionByFrames' + featureType.name +'.txt'
 		fmatrix = folderPath + '\\' + featureType.name 
 		if(not generateDiviion):
-			division = readDivision(fdivisionByFrames)
+			if(featureType != FeatureType.ALL):
+				division = readDivision(fdivisionByFrames)
 		else:
 			#[divisionByFrames, division]
 			if(featureType == FeatureType.ALL):
 
-				for i in range(7):
+				for i in range(len(kerasModels)):
 					fmatrix = folderPath + '\\' + FeatureType(i).name 
 					features = readFeatures(ffeaturesShort + FeatureType(i).name)
 					divisions = ds.basicSceneDetect(features, shots, len(scenes), len(shots), fmatrix)
@@ -251,7 +256,7 @@ def readData(
 		fmetrics = folderPath + '\\metrics' + featureType.name + '.txt'
 		
 		if(featureType == FeatureType.ALL):
-			for i in range(7):
+			for i in range(len(kerasModels)):
 				fmetrics = folderPath + '\\metric' + FeatureType(i).name + '.txt'#'_' + str(shotParts) + '_' + str(shotIndex)
 					
 				division = readDivision(folderPath + '\\divisionByFrames' + FeatureType(i).name +'.txt')
@@ -259,7 +264,7 @@ def readData(
 				metrics = cr.getMetrics(scenes, division)
 				saveMetrics(fmetrics, metrics)
 			
-			fmetrics = folderPath+'\\'+featureType.HSV.name +'.txt'
+			fmetrics = folderPath + '\\metric' + featureType.HSV.name +'.txt'
 
 			division = readDivision(folderPath + '\\divisionByFrames' + featureType.HSV.name +'.txt')
 
@@ -284,8 +289,8 @@ def main(args):
 			try:
 				if(root[-1].isdigit()):
 					readData(
-						root, False, True, True,
-						shotNet, True,	FeatureType.HSV, 2,
+						root, False, False, False,
+						shotNet, False,	FeatureType.ALL, 2,
 						1)# Опыт показал что выбор разных кадров из одного шота слабо что-то меняет
 					#	folderPath, generateShots, generateDiviion, generateFeatures,
 					#	shotNet, saveScenesByFramesToFile, featureExtractionType, shotParts,
