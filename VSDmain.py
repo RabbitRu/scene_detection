@@ -17,20 +17,32 @@ class FeatureType(Enum):
 	MobileNetV2 = 5
 	DenseNet = 6
 	NASNet = 7
+	AllKeras = 8
 	HSV = 21
 	Audio = 31
 	ALL=100
 
 
-#ResNet, inceptionResNet оч плохие результаты, а VGG16 оч похож на VGG19
+#ResNet, inceptionResNet оч плохие результаты, а VGG16 оч похож на VGG19 
+#это для AMD
+#kerasModels = [
+#	"keras.applications.xception.Xception(include_top=False, weights='imagenet', pooling='avg')",#299
+#	"keras.applications.vgg19.VGG19(include_top=False, weights='imagenet', pooling='avg')",#224
+#	"keras.applications.inception_v3.InceptionV3(include_top=False, weights='imagenet', pooling='avg')",#299
+#	"keras.applications.mobilenet.MobileNet(input_shape=(224, 224, 3),include_top=False, weights='imagenet', pooling='avg')",#224
+#	"keras.applications.mobilenet_v2.MobileNetV2(input_shape=(224, 224, 3), include_top=False, weights='imagenet', pooling='avg')",#224
+#	"keras.applications.densenet.DenseNet201(include_top=False, weights='imagenet', pooling='avg')",#224
+#	"keras.applications.nasnet.NASNetLarge(include_top=False, weights='imagenet', pooling='avg')"#224
+#	]
+
 kerasModels = [
-	"keras.applications.xception.Xception(include_top=False, weights='imagenet', pooling='avg')",#299
-	"keras.applications.vgg19.VGG19(include_top=False, weights='imagenet', pooling='avg')",#224
-	"keras.applications.inception_v3.InceptionV3(include_top=False, weights='imagenet', pooling='avg')",#299
-	"keras.applications.mobilenet.MobileNet(input_shape=(224, 224, 3),include_top=False, weights='imagenet', pooling='avg')",#224
-	"keras.applications.mobilenet_v2.MobileNetV2(input_shape=(224, 224, 3), include_top=False, weights='imagenet', pooling='avg')",#224
-	"keras.applications.densenet.DenseNet201(include_top=False, weights='imagenet', pooling='avg')",#224
-	"keras.applications.nasnet.NASNetLarge(include_top=False, weights='imagenet', pooling='avg')"#224
+	"tensorflow.keras.applications.xception.Xception(include_top=False, weights='imagenet', pooling='avg')",#299
+	"tensorflow.keras.applications.vgg19.VGG19(include_top=False, weights='imagenet', pooling='avg')",#224
+	"tensorflow.keras.applications.inception_v3.InceptionV3(include_top=False, weights='imagenet', pooling='avg')",#299
+	"tensorflow.keras.applications.mobilenet.MobileNet(input_shape=(224, 224, 3),include_top=False, weights='imagenet', pooling='avg')",#224
+	"tensorflow.keras.applications.mobilenet_v2.MobileNetV2(input_shape=(224, 224, 3), include_top=False, weights='imagenet', pooling='avg')",#224
+	"tensorflow.keras.applications.densenet.DenseNet201(include_top=False, weights='imagenet', pooling='avg')",#224
+	"tensorflow.keras.applications.nasnet.NASNetLarge(include_top=False, weights='imagenet', pooling='avg')"#224
 	]
 
 kerasImageSize = [
@@ -159,7 +171,7 @@ def readData(
 		ffeaturesShort = folderPath + '\\features'
 		#shotIndex
 		if(not generateFeatures):
-			if(featureType != FeatureType.ALL):
+			if(featureType != FeatureType.ALL and featureType != FeatureType.AllKeras):
 				features = readFeatures(ffeaturesShort + featureType.name + '.txt')
 		else:
 			if(featureType.value < len(kerasModels)):
@@ -199,7 +211,7 @@ def readData(
 		fscenes = folderPath + '\\scenes.txt'
 		fscenesByFrames = folderPath + '\\scenesByFrames.txt'
 		#Не у всего есть разбиение сцен на планы, так что работаем с разбиением по кадрам
-		if('IBM' in folderPath):
+		if('IBM' in folderPath or 'RAI' in folderPath):
 			scenes = readScenesIBM(fscenes, shots)
 		elif('BBC' in folderPath):
 			scenes = readScenesBBC(fscenes, shots)
@@ -238,7 +250,25 @@ def readData(
 				division = divisions[0]
 				saveDivision(folderPath + '\\division' + FeatureType(i).name +'.txt', 
 					 folderPath + '\\divisionByFrames' + FeatureType(i).name +'.txt', divisions)
-				
+
+			elif(featureType == FeatureType.AllKeras):
+				matrixs = []
+				for i in range(len(kerasModels)):
+					features = readFeatures(ffeaturesShort + FeatureType(i).name)
+					divisions = ds.basicSceneDetect(features, shots, len(scenes), len(shots), "None")
+					matrixs.append(divisions[2])
+
+				for i in range(1,len(matrixs)):
+					for j in range(len(matrixs[0])):
+						for k in range(len(matrixs[0][0])):
+							matrixs[0][j][k] = float(matrixs[0][j][k]) + float(matrixs[i][j][k])
+
+				fmatrix = folderPath + '\\' + featureType.name 
+				divisions = ds.basicSceneDetectWInputMatrix(features, shots,
+				 len(scenes), len(shots), fmatrix, matrixs[0])	
+				division = divisions[0]
+				saveDivision(folderPath + '\\division' + featureType.name +'.txt', 
+					 folderPath + '\\divisionByFrames' + featureType.name +'.txt', divisions)
 
 			else:
 				divisions = ds.basicSceneDetect(features, shots, len(scenes), len(shots), fmatrix)
@@ -289,7 +319,7 @@ def main(args):
 			try:
 				if(root[-1].isdigit()):
 					readData(
-						root, False, False, False,
+						root, False, True, True,
 						shotNet, False,	FeatureType.ALL, 2,
 						1)# Опыт показал что выбор разных кадров из одного шота слабо что-то меняет
 					#	folderPath, generateShots, generateDiviion, generateFeatures,

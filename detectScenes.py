@@ -105,12 +105,36 @@ def getDivision(J, K):
 def basicSceneDetect(features, shots, K, N, fmatrix):
 	distanceMatrix = buildMatrix(features)
 
+	if(fmatrix != "None"):
+		try:
+			plt.pcolormesh(distanceMatrix, cmap='magma', snap=True)
+			plt.savefig(fmatrix + 'matrix.png', bbox_inches='tight', dpi=200)
+			plt.close()
+		except Exception as e:
+			print(e)
+
+	tables = costTable(distanceMatrix, K, N)
+	division = getDivision(tables[1], K)
+	divisionByFrames = []
+	for i in range(1, len(division)):
+		divisionByFrames.append([shots[division[i - 1]][0], shots[division[i] - 1][1]])
+
 	try:
 		plt.pcolormesh(distanceMatrix, cmap='magma', snap=True)
 		plt.savefig(fmatrix + 'matrix.png', bbox_inches='tight', dpi=200)
 		plt.close()
 	except Exception as e:
 		print(e)
+	return (divisionByFrames, division, distanceMatrix)
+
+def basicSceneDetectWInputMatrix(features, shots, K, N, fmatrix, distanceMatrix):
+	if(fmatrix != None):
+		try:
+			plt.pcolormesh(distanceMatrix, cmap='magma', snap=True)
+			plt.savefig(fmatrix + 'matrix.png', bbox_inches='tight', dpi=200)
+			plt.close()
+		except Exception as e:
+			print(e)
 
 	tables = costTable(distanceMatrix, K, N)
 	division = getDivision(tables[1], K)
@@ -125,8 +149,6 @@ def basicSceneDetect(features, shots, K, N, fmatrix):
 	except Exception as e:
 		print(e)
 	return (divisionByFrames, division)
-
-
 
 
 

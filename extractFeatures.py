@@ -1,10 +1,11 @@
 import os
-
-os.environ["KERAS_BACKEND"] = "plaidml.keras.backend"
+#это для AMD
+#os.environ["KERAS_BACKEND"] = "plaidml.keras.backend"
 import keras
 import cv2
 import numpy as np
 import math
+import tensorflow
 
 def _checkIndex(video, index):
 	totalFrames = video.get(cv2.CAP_PROP_FRAME_COUNT)
