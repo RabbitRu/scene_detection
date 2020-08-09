@@ -85,15 +85,25 @@ def metricCoverage(divA, divB):
 			divA[i]) / (divA[i][1] - divA[i][0])
 	return summator / len(divA)
 
+#F-мера
+def metricFCO(coverage, overflow):
+	return (2 * coverage * overflow) / (coverage + overflow)
+
+def metricFCOP(coverage, overflow, purity):
+	return (3 * coverage * overflow * purity) / (coverage + overflow + purity)
 
 def getMetrics(origDivision, ourDivision):
 	purity = metricPurity(origDivision, ourDivision)
 	coverage = metricCoverage(origDivision, ourDivision)
 	overflow = metricOverflow(origDivision, ourDivision)
+	fmco = metricFCO(coverage, overflow)
+	fmcop = metricFCOP(coverage, overflow, purity)
 	allMetrics = []
 	allMetrics.append('Purity: ' + str(purity))
 	allMetrics.append('Coverage: ' + str(coverage))
 	allMetrics.append('Overflow: ' + str(overflow))
+	allMetrics.append('F-m CO: ' + str(fmco))
+	allMetrics.append('F-m COP: ' + str(fmcop))
 	return allMetrics
 
 
